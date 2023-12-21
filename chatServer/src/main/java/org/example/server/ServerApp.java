@@ -1,4 +1,4 @@
-package org.example.geek.chat.server;
+package org.example.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -18,10 +18,10 @@ public class ServerApp {
             ServerBootstrap b = new ServerBootstrap();//создание сервера
             b.group(bossGroup,workerGroup)//надстройка Сервака для подклучение потоков и для работы с потоками
                     .channel(NioServerSocketChannel.class)//для подклученных исползуем канал NioServerSocketChannel
-                    .childHandler(new ChannelInitializer<SocketChannel>() {//иницализируем подклучение
+                    .childHandler(new ChannelInitializer<SocketChannel>() {//иницализируем входящие подклучение
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-
+                            socketChannel.pipeline().addLast(new MainHandler());//исползуем наш обработчик
                         }
                     });
             ChannelFuture future = b.bind(PORT).sync();//надстройка порта и запуска сервака
