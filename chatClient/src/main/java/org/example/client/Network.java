@@ -1,9 +1,7 @@
 package org.example.client;
+
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
@@ -14,8 +12,10 @@ public class Network {
     public static final int PORT = 8081;
     public static final String HOST = "localhost";
     private SocketChannel channel;
-    public Network(){
-        new Thread(()->{
+    private Callback onMassageReceivedCallback;
+    public Network(Callback onMassageReceivedCallback){
+        this.onMassageReceivedCallback = onMassageReceivedCallback;
+        Thread t = new Thread(()->{
             EventLoopGroup worker = new NioEventLoopGroup();
             try{
                 Bootstrap bootstrap = new Bootstrap();
@@ -24,8 +24,15 @@ public class Network {
                         .handler(new ChannelInitializer<SocketChannel>() {
                             @Override
                             protected void initChannel(SocketChannel socketChannel) throws Exception {
-                               channel = socketChannel;
-                               socketChannel.pipeline().addLast(new StringDecoder(), new StringEncoder());//зоворачиваем в байт буффер
+                                channel = socketChannel;
+                                socketChannel.pipeline().addLast(new StringDecoder(), new StringEncoder(), new SimpleChannelInboundHandler<String>() {
+                                    @Override
+                                    protected void channelRead0(ChannelHandlerContext channelHandlerContext, String string) throws Exception {
+                                        if(onMassageReceivedCallback != null){
+                                            onMassageReceivedCallback.callback(string);
+                                        }
+                                    }
+                                });//зоворачиваем в байт буффер
                             }
                         });
                 ChannelFuture future = bootstrap.connect(HOST,PORT).sync();
@@ -35,7 +42,9 @@ public class Network {
             }finally {
                 worker.shutdownGracefully();//зокриваем поток
             }
-        }).start();
+        });
+        t.setDaemon(true);
+        t.start();
     }
 
     public void sendMassage(String string){
