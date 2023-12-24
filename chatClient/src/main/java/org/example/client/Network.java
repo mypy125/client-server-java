@@ -25,14 +25,7 @@ public class Network {
                             @Override
                             protected void initChannel(SocketChannel socketChannel) throws Exception {
                                 channel = socketChannel;
-                                socketChannel.pipeline().addLast(new StringDecoder(), new StringEncoder(), new SimpleChannelInboundHandler<String>() {
-                                    @Override
-                                    protected void channelRead0(ChannelHandlerContext channelHandlerContext, String string) throws Exception {
-                                        if(onMassageReceivedCallback != null){
-                                            onMassageReceivedCallback.callback(string);
-                                        }
-                                    }
-                                });//зоворачиваем в байт буффер
+                                socketChannel.pipeline().addLast(new StringDecoder(), new StringEncoder(),new ClientHandler(onMassageReceivedCallback));//оброботыбаем стринги, зоворачиваем в байт буффер
                             }
                         });
                 ChannelFuture future = bootstrap.connect(HOST,PORT).sync();
